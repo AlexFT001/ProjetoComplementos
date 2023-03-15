@@ -167,7 +167,7 @@ PCTUSED 40
 CREATE TABLE ORDEM(
 	CONTA_numeroConta NUMBER(7) NOT NULL,
 	CONSTRAINT ordem_pk PRIMARY KEY (CONTA_numeroConta),
-	CONSTRAINT fk_numeroConta FOREIGN KEY (CONTA_numeroConta)  REFERENCES CONTA(numeroConta)
+	CONSTRAINT fk_numeroConta_Ordem FOREIGN KEY (CONTA_numeroConta)  REFERENCES CONTA(numeroConta)
 );
 
 
