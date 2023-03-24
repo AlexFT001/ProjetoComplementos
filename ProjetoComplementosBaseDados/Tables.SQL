@@ -1,21 +1,21 @@
 -- executar mkdir brightbank
 
-select 'drop table ', table_name, 'cascade constraints;' from user_tables ;
+--select 'drop table ', table_name, 'cascade constraints;' from user_tables ;
 
 
 CREATE TABLESPACE
 BankingStart  DATAFILE 
-'/home/oracle/brightbank/BankingStart.dat'
-SIZE 1m
+'/home/oracle/brightbank/BankingStart.dbf'
+SIZE 1M
 REUSE
-AUTOEXTEND ON NEXT 1M MAXSIZE 10M;
+AUTOEXTEND ON NEXT 1M;
 
 
 DROP TABLESPACE BankingStart INCLUDING CONTENTS AND DATAFILES;
 
 
 CREATE TABLE ENDERECO(
-	NB_NEndereco NUMBER(7) GENERATED ALWAYS AS IDENTITY START WITH 1000 INCREMENT BY 1,
+	NB_NEndereco NUMBER(7) GENERATED ALWAYS AS IDENTITY (START WITH 1000 INCREMENT BY 1),
 	VC_Rua VARCHAR2(10) NOT NULL,
 	NB_CodPostal NUMBER(7) NOT NULL,
 	NB_NumPorta NUMBER(2) NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE CLIENTE(
 	VC_nomeCliente VARCHAR2(20) NOT NULL,
 	VC_profissao VARCHAR2(20) NOT NULL,
 	DT_dataNasc date NOT NULL,
-	VC_email VARCHAR2(20),
+	VC_email VARCHAR2(20) UNIQUE,
 	VC_password VARCHAR2(10),
 	CONSTRAINT cliente_pk PRIMARY KEY (NB_iban),
 	CONSTRAINT fk_NB_NAgencia_cliente FOREIGN KEY(NB_AGENCIA_NB_NAgencia) REFERENCES AGENCIA(NB_NAgencia),
