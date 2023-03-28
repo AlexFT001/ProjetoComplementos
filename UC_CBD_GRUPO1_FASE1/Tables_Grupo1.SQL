@@ -2,16 +2,14 @@
 
 --select 'drop table ', table_name, 'cascade constraints;' from user_tables ;
 
+--DROP TABLESPACE BankingStart INCLUDING CONTENTS AND DATAFILES;
 
 CREATE TABLESPACE
 BankingStart  DATAFILE 
 '/home/oracle/brightbank/BankingStart.dbf'
-SIZE 1M
+SIZE 4M
 REUSE
-AUTOEXTEND ON NEXT 1M;
-
-
-DROP TABLESPACE BankingStart INCLUDING CONTENTS AND DATAFILES;
+AUTOEXTEND ON NEXT 4M;
 
 
 CREATE TABLE ENDERECO(
@@ -89,7 +87,7 @@ PCTUSED 40
 ;
 
 CREATE TABLE CONTACLIENTE(
-	NB_CLIENTE_IBAN NUMBER(16) NOT NULL,--numero do cliente
+	NB_CLIENTE_IBAN NUMBER(16) NOT NULL,
 	NB_CONTA_numeroConta NUMBER(16) NOT NULL,
 	CONSTRAINT pk_contaCliente PRIMARY KEY (NB_CLIENTE_IBAN, NB_CONTA_numeroConta),
 	CONSTRAINT fk_numeroConta   FOREIGN KEY (NB_CONTA_numeroConta)  REFERENCES CONTA(NB_numeroConta),
@@ -102,12 +100,12 @@ PCTUSED 40
 
 
 
-CREATE TABLE CATEGORIA(--abreviação da categoria (salario sal; creche cre; alimentação alm; Desporto des; combustíveis com; saúde sau; 
+CREATE TABLE CATEGORIA(
 	VC_abrev_categoria VARCHAR2(3) primary key,  
 	VC_nome_categoria VARCHAR2(20) NOT NULL	
 )
 TABLESPACE BankingStart
-PCTFREE 0 
+PCTFREE 15
 PCTUSED 40
 ;
 
@@ -143,7 +141,7 @@ PCTUSED 40
 
 CREATE TABLE MOVIMENTO(
 	NB_TRANSACAO_numeroTransacao NUMBER(7) NOT NULL,
-	VC_operacao VARCHAR2(1) NOT NULL, --levantamento e deposito
+	VC_operacao VARCHAR2(1) NOT NULL, --levantamento e deposito.
 	CONSTRAINT pk_NB_TRANSACAO_numeroTransacao_Movimento PRIMARY KEY (NB_TRANSACAO_numeroTransacao),
 	CONSTRAINT fk_numeroTransacao_Movimento  FOREIGN KEY (NB_TRANSACAO_numeroTransacao)  REFERENCES TRANSACAO(NB_numeroTransacao),
 	CONSTRAINT ck_operacao CHECK(VC_operacao IN('L','D'))
@@ -156,11 +154,11 @@ PCTUSED 40
 
 CREATE TABLE PRODUTO(
 	NB_numProduto NUMBER(7) GENERATED ALWAYS AS IDENTITY (START WITH 1000 INCREMENT BY 1),
-	VC_tipoProduto VARCHAR2(50), --conta jovem e o krlh
+	VC_tipoProduto VARCHAR2(50), --conta jovem, e outros.
 	CONSTRAINT produto_pk PRIMARY KEY (NB_numProduto)
 )
 TABLESPACE BankingStart
-PCTFREE 0 
+PCTFREE 15
 PCTUSED 40
 ;
 
