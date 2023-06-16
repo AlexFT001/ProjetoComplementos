@@ -17,4 +17,5 @@ Ordem de inserção de scripts:
 6. procedimentos
 8. triggers
 7. views
-8. exemplos
+8. index
+9. exemplos

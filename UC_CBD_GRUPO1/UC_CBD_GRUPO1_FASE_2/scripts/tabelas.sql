@@ -29,7 +29,7 @@ CREATE TABLE endereco (
     nb_codpostal   NUMBER(7) NOT NULL,
     nb_numporta    NUMBER(2) NOT NULL,
     vc_cidade      VARCHAR2(50) NOT NULL,
-    vc_conselho    VARCHAR2(50) NOT NULL,
+    vc_concelho    VARCHAR2(50) NOT NULL,
     vc_distrito    VARCHAR2(50) NOT NULL,
     vc_pais        VARCHAR2(50) NOT NULL,
     CONSTRAINT endereco_pk PRIMARY KEY ( nb_nendereco )

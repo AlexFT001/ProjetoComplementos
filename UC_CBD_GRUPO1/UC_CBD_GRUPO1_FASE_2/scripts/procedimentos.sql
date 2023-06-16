@@ -6,7 +6,7 @@ CREATE OR REPLACE PROCEDURE insert_loglog (operation_value varchar2,short_messag
   short_message VARCHAR2(200) := short_messages;
   p_user_logged VARCHAR2(100) := USER;
 BEGIN
-  INSERT INTO /*+ APPEND PARALLEL(logErros, 5)*/  logErros (vc_operacao, vc_user, dta_datalog,vc_short_message)
+  INSERT INTO /*+ APPEND PARALLEL(logErros, DEFAULT)*/  logErros (vc_operacao, vc_user, dta_datalog,vc_short_message)
   VALUES (p_operation, p_user_logged, SYSDATE,short_message);
   COMMIT;
 END;
@@ -27,7 +27,7 @@ BEGIN
 
    anoformatado := SUBSTR(TO_CHAR(ano), 3);
 
-insert into /*+ APPEND PARALLEL(historicotransacao, 5)*/ historicotransacao SELECT /* + parallel(t)*/t.*
+insert into /*+ APPEND PARALLEL(historicotransacao, DEFAULT)*/ historicotransacao SELECT /* + parallel(t)*/t.*
 FROM transacao t
 WHERE EXTRACT(YEAR FROM DTA_DTATRANSACAO) = anoformatado;
 
@@ -254,7 +254,7 @@ CREATE OR REPLACE PROCEDURE SP_ENDERECO_INSERT
      codigoPostal endereco.nb_codpostal%type,
      numPorta endereco.nb_numporta%type,
      cidade endereco.vc_cidade%type,
-     conselho endereco.vc_conselho%type,
+     concelho endereco.vc_concelho%type,
      distrito endereco.vc_distrito%type,
      pais endereco.vc_pais%type,
      cliente cliente.nb_ncliente%type
@@ -263,7 +263,7 @@ AS
     numeroEndereco endereco.nb_nendereco%type;
     cidadeVerificar ext_codPostal.vc_cidade%type;
     cidadeRecebida endereco.vc_cidade%type;
-    concelhoverificar endereco.vc_conselho%type;
+    concelhoverificar endereco.vc_concelho%type;
     distritoverificar endereco.vc_distrito%type;
     codDistrito ext_distrito.NB_CodDistrito%type;
     codConcelho ext_concelho.NB_CodConcelho%type;
@@ -276,7 +276,7 @@ BEGIN
     Select  NB_CodConcelho, vc_concelho, NB_CodDistrito
     INTO  codConcelho, concelhoverificar, codDistrito
     FROM ext_concelho
-    WHERE vc_concelho = conselho;
+    WHERE vc_concelho = concelho;
 
     SELECT vc_distrito
     INTO distritoverificar
@@ -295,11 +295,11 @@ BEGIN
 
              IF cidaderecebida LIKE cidadeverificar
              THEN
-                INSERT INTO /*+ APPEND PARALLEL(ENDERECO, 5)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_conselho, vc_distrito, vc_pais)
-                VALUES (rua, codigoPostal, numPorta, cidade, conselho, distrito, pais)
+                INSERT INTO /*+ APPEND PARALLEL(ENDERECO, DEFAULT)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_concelho, vc_distrito, vc_pais)
+                VALUES (rua, codigoPostal, numPorta, cidade, concelho, distrito, pais)
                 RETURNING  nb_nendereco INTO numeroEndereco;
 
-                INSERT INTO /*+ APPEND PARALLEL(moradacliente, 5)*/ moradacliente VALUES (cliente,numeroEndereco);
+                INSERT INTO /*+ APPEND PARALLEL(moradacliente, DEFAULT)*/ moradacliente VALUES (cliente,numeroEndereco);
              ELSE
              insert_loglog('SP_ENDERECO_INSERT','A cidade inserida não corresponde com o código Postal');
                 RAISE_APPLICATION_ERROR(-20001, 'A cidade inserida não corresponde com o código Postal');
@@ -309,11 +309,11 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20001, 'O distrito inserido não corresponde ao distrito do concelho inserido.');
     END IF;
 ELSE
-    INSERT INTO /*+ APPEND PARALLEL(ENDERECO, 5)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_conselho, vc_distrito, vc_pais)
-    VALUES (rua, codigoPostal, numPorta, cidade, conselho, distrito, pais)
+    INSERT INTO /*+ APPEND PARALLEL(ENDERECO, DEFAULT)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_concelho, vc_distrito, vc_pais)
+    VALUES (rua, codigoPostal, numPorta, cidade, concelho, distrito, pais)
     RETURNING  nb_nendereco INTO numeroEndereco;
 
-    INSERT INTO/*+ APPEND PARALLEL(MORADACLIENTE, 5)*/ moradacliente VALUES (cliente,numeroEndereco);
+    INSERT INTO/*+ APPEND PARALLEL(MORADACLIENTE, DEFAULT)*/ moradacliente VALUES (cliente,numeroEndereco);
 END IF;
 
 EXCEPTION
@@ -357,7 +357,7 @@ BEGIN
    THEN
     IF UPPER(tipodeConta) LIKE 'ORDEM' OR UPPER(tipodeConta) LIKE 'PRAZO'
     THEN
-    INSERT INTO /*+ APPEND PARALLEL(CONTA, 5)*/ CONTA (nb_saldo, vc_tipo, nb_nagencia,nb_nproduto)
+    INSERT INTO /*+ APPEND PARALLEL(CONTA, DEFAULT)*/ CONTA (nb_saldo, vc_tipo, nb_nagencia,nb_nproduto)
     VALUES (saldo, UPPER(tipodeConta), agenciaConta, produto)
     RETURNING  nb_iban INTO  numeroConta;
     ELSE
@@ -367,7 +367,7 @@ BEGIN
 
     titularidade := titularOrdem(numeroConta);
 
-    INSERT INTO /*+ APPEND PARALLEL(TITULAR, 5)*/ titular
+    INSERT INTO /*+ APPEND PARALLEL(TITULAR, DEFAULT)*/ titular
     VALUES (cliente, numeroConta, TO_DATE(CURRENT_DATE, 'dd/mm/yyyy'), titularidade);
    ELSE
     insert_loglog('SP_CONTA_INSERT','O saldo não pode ser negativo.');
@@ -401,7 +401,7 @@ BEGIN
 
     titularidade := titularOrdem(iban);
 
-    INSERT INTO /*+ APPEND PARALLEL(TITULAR, 5)*/ titular VALUES (cliente,iban,TO_DATE(current_date,'dd/mm/yyy'),titularidade);
+    INSERT INTO /*+ APPEND PARALLEL(TITULAR, DEFAULT)*/ titular VALUES (cliente,iban,TO_DATE(current_date,'dd/mm/yyy'),titularidade);
 
 EXCEPTION
 WHEN excepcao_existente
@@ -434,7 +434,7 @@ CREATE OR REPLACE PROCEDURE SP_CLIENTE_INSERT
      codigoPostal endereco.nb_codpostal%type,
      numPorta endereco.nb_numporta%type,
      cidade endereco.vc_cidade%type,
-     conselho endereco.vc_conselho%type,
+     concelho endereco.vc_concelho%type,
      distrito endereco.vc_distrito%type,
      pais endereco.vc_pais%type,
      saldo conta.nb_saldo%type,
@@ -448,16 +448,29 @@ AS
     excepcao_existente EXCEPTION;
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
+    /*
+    Bloco de código que valida se o nome inserido possui um caracter numérico.
+    Utiliza a função REGEXP_LIKE()  que está a ser utilizada para verificar se um caractere individual do nome, corresponde a uma letra alfabética
+    para isso é utilizado o padrão '[[:alpha:]]'  que representa qualquer caractere alfabético.
+    A funnção REGEXP_LIKE() tem como objetivo validar se o se uma determinada expressão corresponde a uma string.
+    */
+    FOR indice IN 1..LENGTH(nome) LOOP
+        IF NOT REGEXP_LIKE(SUBSTR(nome, indice, 1), '[[:alpha:]]') THEN
+            insert_loglog('SP_CLIENTE_INSERT','O nome não pode conter números.');
+            RAISE_APPLICATION_ERROR(-20001, 'O nome não pode conter números.');
+            EXIT;
+        END IF;
+    END LOOP;
 
     tamanhonif := tamanhoNumero(nif);
 
     IF tamanhonif = 9
     THEN
-        INSERT INTO /*+ APPEND PARALLEL(CLIENTE, 5)*/ CLIENTE (NB_nif, vc_nome, nb_idade, vc_profissao, dt_datanascimento, vc_email, vc_password, nb_nagencia)
+        INSERT INTO /*+ APPEND PARALLEL(CLIENTE, DEFAULT)*/ CLIENTE (NB_nif, vc_nome, nb_idade, vc_profissao, dt_datanascimento, vc_email, vc_password, nb_nagencia)
         VALUES (nif, nome, TRUNC(MONTHS_BETWEEN(sysdate, dataNascimento)/12), profissao, dataNascimento, emailcliente, passWordcliente, agencia)
         RETURNING  nb_ncliente into numeroCliente;
 
-        SP_ENDERECO_INSERT (rua, codigoPostal, numPorta, cidade, conselho, distrito, pais, numeroCliente);
+        SP_ENDERECO_INSERT (rua, codigoPostal, numPorta, cidade, concelho, distrito, pais, numeroCliente);
 
         SP_CONTA_INSERT(saldo, tipodeConta, agencia, produto, numeroCliente);
     ELSE
@@ -510,7 +523,7 @@ BEGIN
      THEN
          tamanho := tamanhoNumero(pin);
          IF tamanho = 4 THEN
-            INSERT INTO /*+ APPEND PARALLEL(CARTAO, 5)*/ cartao (nb_pin, nb_cvv, vc_validade, nb_ncliente, nb_iban)
+            INSERT INTO /*+ APPEND PARALLEL(CARTAO, DEFAULT)*/ cartao (nb_pin, nb_cvv, vc_validade, nb_ncliente, nb_iban)
             VALUES (pin, cartao_cvv.nextval, TO_DATE(validade, 'DD/MM/YYYY'), numerCliente, iban);
 
         ELSE
@@ -562,7 +575,7 @@ BEGIN
 
     IF agenciaid IS NOT NULL
     THEN
-    INSERT INTO /*+ APPEND PARALLEL(FUNCIONARIO, 5)*/ FUNCIONARIO (vc_nome, nb_nagencia, dta_dtanascimento,nb_supervisor)
+    INSERT INTO /*+ APPEND PARALLEL(FUNCIONARIO, DEFAULT)*/ FUNCIONARIO (vc_nome, nb_nagencia, dta_dtanascimento,nb_supervisor)
     VALUES (nome, agencia, TO_DATE(dataNascimento, 'dd/mm/yyyy'), superior)
     RETURNING nb_nfuncionario  INTO funcionarioid ;
 
@@ -774,7 +787,7 @@ END IF;
     END IF;
 
 
-    INSERT INTO /*+ APPEND PARALLEL(TRANSACAO, 5)*/ TRANSACAO (VC_plataforma, nb_valor, dta_dtatransacao, nb_categoria, nb_operacao, nb_ncliente, nb_iban, nb_IBANRecetor, nb_Cartao)
+    INSERT INTO /*+ APPEND PARALLEL(TRANSACAO, DEFAULT)*/ TRANSACAO (VC_plataforma, nb_valor, dta_dtatransacao, nb_categoria, nb_operacao, nb_ncliente, nb_iban, nb_IBANRecetor, nb_Cartao)
     VALUES (plataforma, valor,TO_DATE(current_date,'dd/mm/yyyy'),categoria,operacao,clienteTransacao,contatransacao,contarecetora, cartao);
     IF contarecetora IS NULL
     THEN
@@ -809,7 +822,7 @@ CREATE OR REPLACE PROCEDURE SP_AGENCIA_INSERT
      codigoPostal endereco.nb_codpostal%type,
      numPorta endereco.nb_numporta%type,
      cidade endereco.vc_cidade%type,
-     conselho endereco.vc_conselho%type,
+     concelho endereco.vc_concelho%type,
      distrito endereco.vc_distrito%type,
      pais endereco.vc_pais%type
      )
@@ -817,7 +830,7 @@ AS
     numeroEndereco endereco.nb_nendereco%type;
     cidadeVerificar ext_codPostal.vc_cidade%type;
     cidadeRecebida endereco.vc_cidade%type;
-    concelhoverificar endereco.vc_conselho%type;
+    concelhoverificar endereco.vc_concelho%type;
     distritoverificar endereco.vc_distrito%type;
     codDistrito ext_distrito.NB_CodDistrito%type;
     codConcelho ext_concelho.NB_CodConcelho%type;
@@ -829,7 +842,7 @@ THEN
     Select  NB_CodConcelho, vc_concelho, NB_CodDistrito
     INTO  codConcelho, concelhoverificar, codDistrito
     FROM ext_concelho
-    WHERE vc_concelho = conselho;
+    WHERE vc_concelho = concelho;
 
     SELECT vc_distrito
     INTO distritoverificar
@@ -847,11 +860,11 @@ THEN
 
              IF cidaderecebida LIKE cidadeverificar
              THEN
-                INSERT INTO /*+ APPEND PARALLEL(ENDERECO, 5)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_conselho, vc_distrito, vc_pais)
-                VALUES (rua, codigoPostal, numPorta, cidade, conselho, distrito, pais)
+                INSERT INTO /*+ APPEND PARALLEL(ENDERECO, DEFAULT)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_concelho, vc_distrito, vc_pais)
+                VALUES (rua, codigoPostal, numPorta, cidade, concelho, distrito, pais)
                 RETURNING  nb_nendereco INTO numeroEndereco;
 
-                INSERT INTO /*+ APPEND PARALLEL(AGENCIA, 5)*/ AGENCIA (nb_nendreco) VALUES (numeroEndereco);
+                INSERT INTO /*+ APPEND PARALLEL(AGENCIA, DEFAULT)*/ AGENCIA (nb_nendreco) VALUES (numeroEndereco);
             ELSE
                 insert_loglog('SP_AGENCIA_INSERT','A cidade inserida não corresponde com o código Postal');
                  RAISE_APPLICATION_ERROR(-20001, 'A cidade inserida não corresponde com o código Postal');
@@ -866,8 +879,8 @@ ELSE
 END IF;
 EXCEPTION
 WHEN NO_DATA_FOUND THEN
-	insert_loglog('SP_AGENCIA_INSERT','O Código Postal ou o conselho inserido não existe.');
-    RAISE_APPLICATION_ERROR(-20001, 'O Código Postal ou o conselho inserido não existe.');
+	insert_loglog('SP_AGENCIA_INSERT','O Código Postal ou o concelho inserido não existe.');
+    RAISE_APPLICATION_ERROR(-20001, 'O Código Postal ou o concelho inserido não existe.');
 	
 END SP_AGENCIA_INSERT;
 /
@@ -881,7 +894,7 @@ IS
 
 BEGIN
 
-INSERT INTO /*+ APPEND PARALLEL(OPERACA, 5)*/ operacao (VC_NOME_OPERACAO) VALUES (nome_operacao );
+INSERT INTO /*+ APPEND PARALLEL(OPERACA, DEFAULT)*/ operacao (VC_NOME_OPERACAO) VALUES (nome_operacao );
 EXCEPTION
    WHEN OTHERS THEN
     insert_loglog('Insert',SQLERRM);
@@ -897,7 +910,7 @@ execute sp_produto_insert('produtos');
 CREATE OR REPLACE PROCEDURE sp_produto_insert(nome_ops varchar2)
 IS
 BEGIN
-INSERT INTO /*+ APPEND PARALLEL(PRODUTO, 5)*/ PRODUTO (VC_TIPOPRODUTO) VALUES (nome_ops);
+INSERT INTO /*+ APPEND PARALLEL(PRODUTO, DEFAULT)*/ PRODUTO (VC_TIPOPRODUTO) VALUES (nome_ops);
 EXCEPTION
    WHEN OTHERS THEN
     insert_loglog('Insert',SQLERRM);
@@ -913,7 +926,7 @@ execute sp_produto_insert('categoria');
 CREATE OR REPLACE PROCEDURE sp_categoria_insert(nome_cat varchar2)
 IS
 BEGIN
-INSERT INTO /*+ APPEND PARALLEL(CATEGORIA, 5)*/ categoria (VC_NOME_CATEGORIA) VALUES (nome_cat);
+INSERT INTO /*+ APPEND PARALLEL(CATEGORIA, DEFAULT)*/ categoria (VC_NOME_CATEGORIA) VALUES (nome_cat);
 EXCEPTION
    WHEN OTHERS THEN
     insert_loglog('Insert',SQLERRM);
@@ -936,7 +949,7 @@ AS
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
 
-    INSERT INTO /*+ APPEND PARALLEL(MORADACLIENTE, 5)*/ MORADACLIENTE VALUES (cliente,numeroEndereco);
+    INSERT INTO /*+ APPEND PARALLEL(MORADACLIENTE, DEFAULT)*/ MORADACLIENTE VALUES (cliente,numeroEndereco);
 
 EXCEPTION
 WHEN excepcao_existente
@@ -1040,7 +1053,7 @@ THEN
     END IF;
         IF tipoConta LIKE 'ORDEM'
         THEN
-        INSERT INTO /*+ APPEND PARALLEL(TRANSACAO, 5)*/ TRANSACAO (VC_plataforma, nb_valor, dta_dtatransacao, nb_categoria, nb_operacao, nb_ncliente, nb_iban, nb_IBANRecetor, nb_Cartao)
+        INSERT INTO /*+ APPEND PARALLEL(TRANSACAO, DEFAULT)*/ TRANSACAO (VC_plataforma, nb_valor, dta_dtatransacao, nb_categoria, nb_operacao, nb_ncliente, nb_iban, nb_IBANRecetor, nb_Cartao)
         VALUES (plataforma, valor,TO_DATE(current_date,'dd/mm/yyyy'),categoria,operacao,clienteTransacao,contatransacao,contarecetora, cartao);
         ELSE
             insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar Transferência com contas a prazo.');
@@ -1065,7 +1078,7 @@ ELSE
 END IF;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-	insert_loglog('SP_TRANSACAO_ALEATORIO','Não existem dados sufciente nas tabelas para realizar transaferencias aleatorias.');
-    RAISE_APPLICATION_ERROR(-20001, 'Não existem dados sufciente nas tabelas para realizar transaferencias aleatorias.');
+	insert_loglog('SP_TRANSACAO_ALEATORIO','Por favor, insira daods existentes.');
+    RAISE_APPLICATION_ERROR(-20001, 'Por favor, insira daodos existentes.');
 END SP_TRANSACAO_INSERT;
 /
