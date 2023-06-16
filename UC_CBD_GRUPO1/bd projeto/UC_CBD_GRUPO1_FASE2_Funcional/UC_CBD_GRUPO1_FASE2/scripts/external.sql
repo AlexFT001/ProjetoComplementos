@@ -1,0 +1,49 @@
+--External Tables
+
+CREATE DIRECTORY externals AS '/home/oracle/brightbank/externals';
+
+CREATE TABLE ext_distrito(
+    NB_CodDistrito NUMBER(7),
+    vc_Distrito VARCHAR2(50)
+)
+    ORGANIZATION EXTERNAL(
+    TYPE ORACLE_LOADER
+    DEFAULT DIRECTORY externals
+    ACCESS PARAMETERS
+    (RECORDS DELIMITED BY NEWLINE
+    FIELDS TERMINATED BY ','
+    MISSING FIELD VALUES ARE NULL)
+    LOCATION('distrito.txt')
+    );
+
+CREATE TABLE ext_concelho(
+    NB_CodDistrito NUMBER(7),
+    NB_CodConcelho NUMBER(7),
+    vc_Concelho VARCHAR2(50)
+)
+    ORGANIZATION EXTERNAL(
+    TYPE ORACLE_LOADER
+    DEFAULT DIRECTORY externals
+    ACCESS PARAMETERS
+    (RECORDS DELIMITED BY NEWLINE
+    FIELDS TERMINATED BY ','
+    MISSING FIELD VALUES ARE NULL)
+    LOCATION('concelho.txt')
+    );
+
+CREATE TABLE ext_codPostal(
+    NB_CodDistrito NUMBER(7),
+    NB_CodConcelho NUMBER(7),
+    NB_CodPostal NUMBER(7),
+    vc_cidade VARCHAR2(50)
+)
+    ORGANIZATION EXTERNAL(
+    TYPE ORACLE_LOADER
+    DEFAULT DIRECTORY externals
+    ACCESS PARAMETERS
+    (RECORDS DELIMITED BY NEWLINE
+    FIELDS TERMINATED BY ','
+    MISSING FIELD VALUES ARE NULL)
+    LOCATION('codPostal.txt')
+    );
+

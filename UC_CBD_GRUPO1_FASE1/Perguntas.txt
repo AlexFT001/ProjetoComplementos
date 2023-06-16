@@ -1,6 +1,0 @@
-1. Um gerente pode ter 1 supervisor? - Sim, Hierarquicamente.
-2. O Cliente tem de guardar somente a primeira Agência? - Sim
-3. O cartão tem de estar ligado ao cliente? - Sim
-4. O banco tera + tipos de operaçãoes no futuro? - Sim
-
-Tablespace de 4 M é para cada tabela
