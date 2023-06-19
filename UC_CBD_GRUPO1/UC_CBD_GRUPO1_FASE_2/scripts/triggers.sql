@@ -21,8 +21,8 @@ BEGIN
       operacao := 'DELETE';
       cliente_pk := :OLD.nb_ncliente;
   END IF;
-  INSERT INTO AlteracoesCliente (vc_operacao, vc_user, dta_dataAlteracao, nb_clientealterado)
-  VALUES (operacao, USER, SYSDATE, cliente_pk);
+  INSERT INTO /*+ APPEND PARALLEL(AlteracoesCliente, DEFAULT)*/  AlteracoesCliente (vc_operacao, vc_user, dta_dataAlteracao, nb_clientealterado)
+  VALUES (operacao, USER, TO_DATE(SYSDATE, 'DD-MM-YYYY HH24:MI'), cliente_pk);
 
 END alteracoes;
 /

@@ -53,17 +53,12 @@ Código que cria a sequencia para a inserção automática do cvv no procediment
 CREATE SEQUENCE cartao_cvv START WITH 100 INCREMENT BY 1 NOCACHE;
 
 /*
-
-Código que cria a sequencia para a PRIMARY KEY da tabela loglog.
-
+Código que cria a sequencia para a PRIMARY KEY da tabela logErros.
 */
 
 CREATE SEQUENCE loglog_seq START WITH 1 INCREMENT BY 1 NOCACHE;
 
-
 /*
-
 Código que cria a sequencia para a PRIMARY KEY da tabela alteracoe_seq.
-
 */
 CREATE SEQUENCE alteracoe_seq START WITH 1 INCREMENT BY 1 NOCACHE;

@@ -59,7 +59,7 @@ PCTFREE 5
 PCTUSED 40
 ;
 
-COMMENT on table agencia is 'Esta possui 10 dados, sendo estas todas as agências que o banco ira possuir.';
+COMMENT on table agencia is 'Esta tem como objetivo possuir todos os dados referentes as agências que o banco ira possuir.';
 
 /*
 Código que cria a tabela funcionario.
@@ -230,7 +230,7 @@ CREATE TABLE titular (
 )
 TABLESPACE otm_gerais
 PCTFREE 0
-PCTUSED 40;
+PCTUSED 0;
 
 COMMENT on table titular is 'Esta tem como objetivo dar a possiblidadem de que cada cliente possa ter mais que uma conta.
                             Para além de identificar qual é a ordem de titularidade de uma conta especifica.';

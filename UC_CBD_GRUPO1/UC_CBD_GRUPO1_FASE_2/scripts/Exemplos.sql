@@ -27,11 +27,11 @@ EXECUTE SP_FUNCIONARIO_INSERT('Sara',  1005,  '25/SEP/1996',  1000);
 
 --nif,nome,profissao,dataNascimento,emailcliente,passwordcliente,rua,codigoPostal,numPorta,cidade,concelho,distrito,pais,saldo,tipodeConta,produto,agencia
 EXECUTE SP_CLIENTE_INSERT(123456789, 'Alex', 'Trabalhador',  '12/APR/2004', 'torres@gmail.com', '12345', 'rua das palmeiras', 3810120, 12, 'Aveiro', 'Aveiro', 'Aveiro', 'Portugal', 10000000, 'ORDEM', 1000, 1000);
-EXECUTE SP_CLIENTE_INSERT(987654321, 'João',  'Estudante',  '10/JUL/2002', 'joao@gmail.com', '54321', 'rua dos Lírios', 3810120, 5, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 500000, 'ORDEM', 1000,  1000);
-EXECUTE SP_CLIENTE_INSERT(111111111, 'Maria',  'Advogada',  '02/FEB/1980', 'maria@gmail.com', '11111', 'rua dos Cravos', 3810120, 10, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 1500000, 'ORDEM', 1000,  1000);
-EXECUTE SP_CLIENTE_INSERT(222222222, 'Ricardo',  'Empresário',  '20/MAR/1975', 'ricardo@gmail.com', '22222', 'rua dos Girassóis', 3810120, 7, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 2000000, 'ORDEM', 1000,  1000);
-EXECUTE SP_CLIENTE_INSERT(333333333, 'Inês',  'Enfermeira',  '12/DEC/1991', 'ines@gmail.com', '33333', 'rua das Violetas', 3810120, 30, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 100000, 'ORDEM', 1000,  1000);
-EXECUTE SP_CLIENTE_INSERT(444444444, 'António',  'Engenheiro',  '28/AUG/1988', 'antonio@gmail.com', '44444', 'rua dos Crisântemos', 3810120, 17, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 800000, 'ORDEM', 1000,  1000);
+EXECUTE SP_CLIENTE_INSERT(987654321, 'João',  'Estudante',  '10/JUL/2002', 'joao@gmail.com', '54321', 'rua dos Lírios', 3810120, 5, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 500000, 'ORDEM', 1000,  1001);
+EXECUTE SP_CLIENTE_INSERT(111111111, 'Maria',  'Advogada',  '02/FEB/1980', 'maria@gmail.com', '11111', 'rua dos Cravos', 3810120, 10, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 1500000, 'ORDEM', 1000,  1002);
+EXECUTE SP_CLIENTE_INSERT(222222222, 'Ricardo',  'Empresário',  '20/MAR/1975', 'ricardo@gmail.com', '22222', 'rua dos Girassóis', 3810120, 7, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 2000000, 'ORDEM', 1000,  1003);
+EXECUTE SP_CLIENTE_INSERT(333333333, 'Inês',  'Enfermeira',  '12/DEC/1991', 'ines@gmail.com', '33333', 'rua das Violetas', 3810120, 30, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 100000, 'ORDEM', 1000,  1004);
+EXECUTE SP_CLIENTE_INSERT(444444444, 'António',  'Engenheiro',  '28/AUG/1988', 'antonio@gmail.com', '44444', 'rua dos Crisântemos', 3810120, 17, 'AVEIRO', 'Aveiro', 'Aveiro', 'Portugal', 800000, 'ORDEM', 1000,  1005);
 EXECUTE SP_CLIENTE_INSERT(555555555, 'Joaquim',  'Professor',  '28/AUG/1988', 'joaquim@gmail.com', '55555', 'rua dos Crisântemos', 3810120, 17, 'AVEIRO', 'Aveiro', 'Aveiro', 'Suiça', 900000, 'ORDEM', 1000,  1000);
 
 --rua,codigoPostal,numPorta,cidade,concelho,distrito,pais,cliente.
@@ -74,7 +74,7 @@ EXECUTE SP_TRANSACAO_INSERT('ATM', 7000,  1000, 1000, 1006, 1000000000000006, NU
 EXECUTE SP_TRANSACAO_INSERT('ATM',11000,  1001, 1000, 1006, 1000000000000006, NULL,  1007);
 
 --ano
-EXECUTE mover_historico(ano=> 2023);
+EXECUTE mover_historico(2023);
 
 --tabela_escolhida, id_escolhido, id_escolhido2, campo_escolhido, novo_valor
 EXECUTE update_specifc_register( 'cliente',  1000,  0 , 'vc_password', 123456);

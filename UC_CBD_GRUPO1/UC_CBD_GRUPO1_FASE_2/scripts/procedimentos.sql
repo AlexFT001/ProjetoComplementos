@@ -263,7 +263,6 @@ AS
     numeroEndereco endereco.nb_nendereco%type;
     cidadeVerificar ext_codPostal.vc_cidade%type;
     cidadeRecebida endereco.vc_cidade%type;
-    concelhoverificar endereco.vc_concelho%type;
     distritoverificar endereco.vc_distrito%type;
     codDistrito ext_distrito.NB_CodDistrito%type;
     codConcelho ext_concelho.NB_CodConcelho%type;
@@ -273,26 +272,45 @@ BEGIN
  IF UPPER(pais) LIKE 'PORTUGAL'
  THEN
 
-    Select  NB_CodConcelho, vc_concelho, NB_CodDistrito
-    INTO  codConcelho, concelhoverificar, codDistrito
+     /*
+    Bloco de código que seleciona o codigo do distrito e do conselho de acordo
+    com o nome do conselho recebido.
+    */
+    Select /*+PARALLEL(ext_concelho, DEFAULT)*/  NB_CodConcelho, NB_CodDistrito
+    INTO  codConcelho, codDistrito
     FROM ext_concelho
-    WHERE vc_concelho = concelho;
+    WHERE vc_concelho = InitCap(concelho);
 
-    SELECT vc_distrito
+    /*
+    Bloco de código que seleciona o nome do distrito de acordo com o codigo do mesmo recebido no
+    coígo anterior.
+    */
+    SELECT /*+PARALLEL(ext_distrito, DEFAULT)*/ vc_distrito
     INTO distritoverificar
     FROM ext_distrito
     WHERE NB_CodDistrito = codDistrito;
 
+    /*
+    Verificação que o distrito recebido anteriormente corresponde com o distrido rcebido por
+    parametro.
+    */
     IF upper(distritoverificar) LIKE upper(distrito)
     THEN
-
-    SELECT vc_cidade
+    /*
+        Se ambos distritos coincidirem é realizado um select para obter a cidade
+        utilizando o codigo de distrito e de conselho obtidos anteriormente
+        e o codigo postal recebido por parametro.
+    */
+    SELECT /*+PARALLEL(ext_codPostal, DEFAULT)*/ vc_cidade
     INTO cidadeverificar
     FROM ext_codPostal
     WHERE nb_codpostal = codigopostal and NB_CodConcelho = codConcelho and NB_CodDistrito = codDistrito;
 
     cidaderecebida := UPPER(cidade)||CHR(13);
-
+            /*
+            Verificação que a cidade recebido anteriormente corresponde com a cidade rcebido por
+            parametro.
+            */
              IF cidaderecebida LIKE cidadeverificar
              THEN
                 INSERT INTO /*+ APPEND PARALLEL(ENDERECO, DEFAULT)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_concelho, vc_distrito, vc_pais)
@@ -353,25 +371,34 @@ AS
     excepcao_existente EXCEPTION;
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
-   IF saldo > 0
-   THEN
+    /*
+    Verificação se o saldo recebido por parametro é maior que 0.
+    */
+IF saldo > 0
+THEN
+    /*
+    Verificação que o tipo de conta recebido por parámetro é a 'ORDEM' ou a 'PRAZO'.
+    */
     IF UPPER(tipodeConta) LIKE 'ORDEM' OR UPPER(tipodeConta) LIKE 'PRAZO'
     THEN
-    INSERT INTO /*+ APPEND PARALLEL(CONTA, DEFAULT)*/ CONTA (nb_saldo, vc_tipo, nb_nagencia,nb_nproduto)
-    VALUES (saldo, UPPER(tipodeConta), agenciaConta, produto)
-    RETURNING  nb_iban INTO  numeroConta;
+        INSERT INTO /*+ APPEND PARALLEL(CONTA, DEFAULT)*/ CONTA (nb_saldo, vc_tipo, nb_nagencia,nb_nproduto)
+        VALUES (saldo, UPPER(tipodeConta), agenciaConta, produto)
+        RETURNING  nb_iban INTO  numeroConta;
+
+        /*
+        Função que ira devolver a ordem de titularidade que deve ser inserida na tabela TITULAR.
+        */
+        titularidade := titularOrdem(numeroConta);
+
+        INSERT INTO /*+ APPEND PARALLEL(TITULAR, DEFAULT)*/ titular
+        VALUES (cliente, numeroConta, TO_DATE(CURRENT_DATE, 'dd/mm/yyyy'), titularidade);
     ELSE
-	insert_loglog('SP_CONTA_INSERT','Tipo de Conta desconhecido.');
+        insert_loglog('SP_CONTA_INSERT','Tipo de Conta desconhecido.');
         RAISE_APPLICATION_ERROR(-20001, 'Tipo de Conta desconhecido.');
     END IF;
-
-    titularidade := titularOrdem(numeroConta);
-
-    INSERT INTO /*+ APPEND PARALLEL(TITULAR, DEFAULT)*/ titular
-    VALUES (cliente, numeroConta, TO_DATE(CURRENT_DATE, 'dd/mm/yyyy'), titularidade);
-   ELSE
+ELSE
     insert_loglog('SP_CONTA_INSERT','O saldo não pode ser negativo.');
-       RAISE_APPLICATION_ERROR(-20001, 'O saldo não pode ser negativo.');
+    RAISE_APPLICATION_ERROR(-20001, 'O saldo não pode ser negativo.');
 
    END IF;
 EXCEPTION
@@ -399,6 +426,9 @@ AS
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
 
+     /*
+    Função que ira devolver a ordem de titularidade que deve ser inserida na tabela TITULAR.
+    */
     titularidade := titularOrdem(iban);
 
     INSERT INTO /*+ APPEND PARALLEL(TITULAR, DEFAULT)*/ titular VALUES (cliente,iban,TO_DATE(current_date,'dd/mm/yyy'),titularidade);
@@ -444,26 +474,33 @@ CREATE OR REPLACE PROCEDURE SP_CLIENTE_INSERT
      )
 AS
     numeroCliente cliente.nb_ncliente%type;
+    nomevalidacao cliente.vc_nome%type;
     tamanhoNif NUMBER(9);
     excepcao_existente EXCEPTION;
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
+
+    nomevalidacao := REPLACE(nome, ' ', '');
     /*
     Bloco de código que valida se o nome inserido possui um caracter numérico.
     Utiliza a função REGEXP_LIKE()  que está a ser utilizada para verificar se um caractere individual do nome, corresponde a uma letra alfabética
     para isso é utilizado o padrão '[[:alpha:]]'  que representa qualquer caractere alfabético.
     A funnção REGEXP_LIKE() tem como objetivo validar se o se uma determinada expressão corresponde a uma string.
     */
-    FOR indice IN 1..LENGTH(nome) LOOP
-        IF NOT REGEXP_LIKE(SUBSTR(nome, indice, 1), '[[:alpha:]]') THEN
-            insert_loglog('SP_CLIENTE_INSERT','O nome não pode conter números.');
-            RAISE_APPLICATION_ERROR(-20001, 'O nome não pode conter números.');
+    FOR indice IN 1..LENGTH(nomevalidacao) LOOP
+        IF NOT REGEXP_LIKE(SUBSTR(nomevalidacao, indice, 1), '[[:alpha:]]') THEN
+            insert_loglog('SP_CLIENTE_INSERT','O nome não pode conter números ou caractéres especiais.');
+            RAISE_APPLICATION_ERROR(-20001, 'O nome não pode conter números ou caractéres especiais.');
             EXIT;
         END IF;
     END LOOP;
 
     tamanhonif := tamanhoNumero(nif);
 
+    /*
+    Verificação do tamanho do nif.
+    Caso este possua 9 digitos o INSERT do cliente será realizado.
+    */
     IF tamanhonif = 9
     THEN
         INSERT INTO /*+ APPEND PARALLEL(CLIENTE, DEFAULT)*/ CLIENTE (NB_nif, vc_nome, nb_idade, vc_profissao, dt_datanascimento, vc_email, vc_password, nb_nagencia)
@@ -512,30 +549,41 @@ AS
     excepcao_existente EXCEPTION;
     PRAGMA EXCEPTION_INIT (excepcao_existente, -2291);
 BEGIN
-    SELECT vc_tipo
+    /*
+    Bloco de código que ira obter o tipo da conta recebida por
+    parâmetro.
+    */
+    SELECT /*+PARALLEL(conta, DEFAULT)*/  vc_tipo
     INTO tipoConta
     FROM conta
     WHERE nb_iban = iban;
 
-    validade := ADD_MONTHS(sysdate, 48);
 
+    validade := ADD_MONTHS(sysdate, 48); --Linha de código que ira gerar a validade do cartão.
+
+    /*
+    Verificação que o tipo de conta obtida anteriormente é do tipo 'ORDEM'.
+    */
     IF UPPER(tipoConta) = 'ORDEM'
      THEN
          tamanho := tamanhoNumero(pin);
-         IF tamanho = 4 THEN
+        /*
+        Verificção que o pin recebido possui 4 dígitos.
+        Caso este possua 4 dígitos o INSERT será realizado.
+        */
+        IF tamanho = 4
+        THEN
             INSERT INTO /*+ APPEND PARALLEL(CARTAO, DEFAULT)*/ cartao (nb_pin, nb_cvv, vc_validade, nb_ncliente, nb_iban)
             VALUES (pin, cartao_cvv.nextval, TO_DATE(validade, 'DD/MM/YYYY'), numerCliente, iban);
-
         ELSE
 		 insert_loglog('SP_CARTAO_INSERT','O PIN tem de possuir 4 dígitos');
-             RAISE_APPLICATION_ERROR(-20001, 'O PIN tem de possuir 4 dígitos');
-			
+         RAISE_APPLICATION_ERROR(-20001, 'O PIN tem de possuir 4 dígitos');
         END IF;
     ELSE
 	    insert_loglog('SP_CARTAO_INSERT','Somente contas a Ordem podem possuir cartão.');
         RAISE_APPLICATION_ERROR(-20001, 'Somente contas a Ordem podem possuir cartão.');
 		
-    end if;
+    END IF;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
 	insert_loglog('SP_CARTAO_INSERT','O Iban inserido não existe.');
@@ -564,26 +612,47 @@ CREATE OR REPLACE PROCEDURE SP_FUNCIONARIO_INSERT
     )
 AS
     gerente funcionario.nb_nfuncionario%type;
-    agenciaId  NUMBER(4);
+    nomevalidacao funcionario.vc_nome%type;
     funcionarioId funcionario.nb_nfuncionario %type;
-
 BEGIN
-    SELECT nb_ngerente, nb_nagencia
-    INTO gerente, agenciaid
+
+    nomevalidacao := REPLACE(nome, ' ', '');
+     /*
+    Bloco de código que valida se o nome inserido possui um caracter numérico.
+    Utiliza a função REGEXP_LIKE()  que está a ser utilizada para verificar se um caractere individual do nome, corresponde a uma letra alfabética
+    para isso é utilizado o padrão '[[:alpha:]]'  que representa qualquer caractere alfabético.
+    A funnção REGEXP_LIKE() tem como objetivo validar se o se uma determinada expressão corresponde a uma string.
+    */
+    FOR indice IN 1..LENGTH(nomevalidacao) LOOP
+        IF NOT REGEXP_LIKE(SUBSTR(nomevalidacao, indice, 1), '[[:alpha:]]') THEN
+            insert_loglog('SP_CLIENTE_INSERT','O nome não pode conter números ou caractéres especiais.');
+            RAISE_APPLICATION_ERROR(-20001, 'O nome não pode conter números ou caractéres especiais.');
+            EXIT;
+        END IF;
+    END LOOP;
+
+    /*
+    Bloco de código que ira obter o gerente da agência inserida.
+    */
+    SELECT /*+PARALLEL(agencia, DEFAULT)*/ nb_ngerente
+    INTO gerente
     FROM agencia
     WHERE nb_nagencia = agencia;
 
-    IF agenciaid IS NOT NULL
-    THEN
     INSERT INTO /*+ APPEND PARALLEL(FUNCIONARIO, DEFAULT)*/ FUNCIONARIO (vc_nome, nb_nagencia, dta_dtanascimento,nb_supervisor)
     VALUES (nome, agencia, TO_DATE(dataNascimento, 'dd/mm/yyyy'), superior)
     RETURNING nb_nfuncionario  INTO funcionarioid ;
 
+    /*
+    Verificação que o gerente obtido anteriormente possui o valor 'NULL'.
+    Caso isto seja verdade será realizado um update na agencia que atualizara esse valor
+    para o numero do funcionário que acabou de ser criado.
+    */
     IF gerente IS NULL
-        THEN
-        update_specifc_register('agencia', agenciaid, 0 ,'nb_ngerente', funcionarioid);
-        END IF;
+    THEN
+        update_specifc_register('agencia', agencia, 0 ,'nb_ngerente', funcionarioid);
     END IF;
+
 
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -639,7 +708,7 @@ BEGIN
     /*
     Bloco de código que verifica quantas categorias existem na tabela operacao.
     */
-    SELECT COUNT(nb_operacao)
+    SELECT /*+PARALLEL(operacao, DEFAULT)*/ COUNT(nb_operacao)
     INTO quantidadevalores1
     FROM operacao;
     /*
@@ -652,7 +721,7 @@ BEGIN
     Bloco de código que da os valores da operacao, escolhida aleatoriamente no codigo anterior,
     para as variaveis operacao e operacaonome.
     */
-    SELECT nb_operacao, vc_nome_operacao
+    SELECT /*+PARALLEL(operacao, DEFAULT)*/ nb_operacao, vc_nome_operacao
     INTO operacao, operacaonome
     FROM operacao
     WHERE nb_operacao = quantidadevalores1;
@@ -660,7 +729,7 @@ BEGIN
     /*
     Bloco de código que verifica quantas categorias existem na tabela categoria.
     */
-    SELECT COUNT(nb_categoria)
+    SELECT /*+PARALLEL(categoria, DEFAULT)*/ COUNT(nb_categoria)
     INTO quantidadevalores2
     FROM categoria;
 
@@ -674,7 +743,7 @@ BEGIN
     Bloco de código que da a primary key da categoria, escolhida aleatoriamente no codigo anterior,
     para a variavel categoria.
     */
-    SELECT nb_categoria
+    SELECT /*+PARALLEL(categoria, DEFAULT)*/ nb_categoria
     INTO categoria
     FROM categoria
     WHERE nb_categoria = quantidadevalores2;
@@ -689,7 +758,7 @@ IF plataforma = 'WEB'
             Bloco de código que introduz na variavel contatransacao, uma conta aleatoria que possua um saldo maior ou igual ao
             valor da transação, isto porque uma vez que é uma transação a operação será obrigatoriamente uma transferência.
             */
-            SELECT a.nb_ncliente, a.nb_iban, c.nb_numerocartao
+            SELECT /*+ PARALLEL(DEFAULT)*/  a.nb_ncliente, a.nb_iban, c.nb_numerocartao
             INTO clienteTransacao, contatransacao, cartao
             FROM (SELECT  nb_ncliente, nb_iban FROM titular
             ORDER BY dbms_random.value) a, cartao c, conta t
@@ -698,7 +767,7 @@ IF plataforma = 'WEB'
             /*
             Bloco de código que introduz na variavel contarecetora, uma conta aleatoria que seja diferente da conta que realizou a transacao.
             */
-            SELECT nb_iban
+            SELECT /*+ PARALLEL(DEFAULT)*/  nb_iban
             INTO contarecetora
             FROM
             (SELECT  nb_iban FROM conta
@@ -708,7 +777,7 @@ IF plataforma = 'WEB'
             /*
             Bloco de código que devolve a chave primaria da operação "TRANSFERENCIA".
             */
-            SELECT nb_operacao, vc_nome_operacao
+            SELECT /*+ PARALLEL(DEFAULT)*/  nb_operacao, vc_nome_operacao
             INTO operacao, operacaonome
             FROM operacao
             WHERE vc_nome_operacao LIKE 'TRANSFERENCIA';
@@ -720,7 +789,7 @@ ELSE
             Bloco de código que introduz na variavel contatransacao, uma conta aleatoria que possua um saldo maior ou igual ao
             valor da transação, isto porque a operação é uma transferência.
             */
-            SELECT a.nb_ncliente, a.nb_iban, c.nb_numerocartao
+            SELECT /*+ PARALLEL(DEFAULT)*/  a.nb_ncliente, a.nb_iban, c.nb_numerocartao
             INTO clienteTransacao, contatransacao, cartao
             FROM (SELECT  nb_ncliente, nb_iban FROM titular
             ORDER BY dbms_random.value) a, cartao c, conta t
@@ -729,7 +798,7 @@ ELSE
             /*
             Bloco de código que introduz na variavel contarecetora, uma conta aleatoria que seja diferente da conta que realizou a transacao.
             */
-            SELECT nb_iban
+            SELECT /*+ PARALLEL(DEFAULT)*/  nb_iban
             INTO contarecetora
             FROM
             (SELECT  nb_iban FROM conta
@@ -743,7 +812,7 @@ ELSE
             Bloco de código que introduz na variavel contatransacao, uma conta aleatoria que possua um saldo maior ou igual ao
             valor da transação, isto porque a operação é um levantamento.
         */
-        SELECT a.nb_ncliente, a.nb_iban, c.nb_numerocartao
+        SELECT /*+ PARALLEL(DEFAULT)*/  a.nb_ncliente, a.nb_iban, c.nb_numerocartao
         INTO clienteTransacao, contatransacao, cartao
         FROM (SELECT  nb_ncliente, nb_iban FROM titular
         ORDER BY dbms_random.value) a, cartao c, conta t
@@ -755,7 +824,7 @@ ELSE
         /*
             Bloco de código que introduz na variavel contatransacao, uma conta aleatoria.
         */
-        SELECT a.nb_ncliente, a.nb_iban, c.nb_numerocartao
+        SELECT /*+ PARALLEL(DEFAULT)*/  a.nb_ncliente, a.nb_iban, c.nb_numerocartao
         INTO clienteTransacao, contatransacao, cartao
         FROM (SELECT  nb_ncliente, nb_iban FROM titular
         ORDER BY dbms_random.value) a, cartao c, conta t
@@ -769,7 +838,7 @@ END IF;
     Bloco de código insere na variavel contasaldo o valor da conta
     que realiza a transação.
     */
-    SELECT vc_tipo, nb_saldo
+    SELECT /*+PARALLEL(conta, DEFAULT)*/ vc_tipo, nb_saldo
     INTO tipoconta, contasaldo
     FROM conta
     WHERE nb_iban = contatransacao;
@@ -780,7 +849,7 @@ END IF;
     */
     IF contarecetora IS NOT NULL
     THEN
-        SELECT nb_saldo
+        SELECT  /*+PARALLEL(conta, DEFAULT)*/ nb_saldo
         INTO contarecetorasaldo
         FROM conta
         WHERE nb_iban = contarecetora;
@@ -830,7 +899,6 @@ AS
     numeroEndereco endereco.nb_nendereco%type;
     cidadeVerificar ext_codPostal.vc_cidade%type;
     cidadeRecebida endereco.vc_cidade%type;
-    concelhoverificar endereco.vc_concelho%type;
     distritoverificar endereco.vc_distrito%type;
     codDistrito ext_distrito.NB_CodDistrito%type;
     codConcelho ext_concelho.NB_CodConcelho%type;
@@ -839,25 +907,46 @@ BEGIN
 
 IF upper(pais) LIKE  'PORTUGAL'
 THEN
-    Select  NB_CodConcelho, vc_concelho, NB_CodDistrito
-    INTO  codConcelho, concelhoverificar, codDistrito
+    /*
+    Bloco de código que seleciona o codigo do distrito e do conselho de acordo
+    com o nome do conselho recebido.
+    */
+    Select /*+PARALLEL(ext_concelho, DEFAULT)*/ NB_CodConcelho, NB_CodDistrito
+    INTO  codConcelho, codDistrito
     FROM ext_concelho
-    WHERE vc_concelho = concelho;
+    WHERE vc_concelho = InitCap(concelho);
 
-    SELECT vc_distrito
+    /*
+    Bloco de código que seleciona o nome do distrito de acordo com o codigo do mesmo recebido no
+    coígo anterior.
+    */
+    SELECT /*+PARALLEL(ext_distrito, DEFAULT)*/ vc_distrito
     INTO distritoverificar
     FROM ext_distrito
     WHERE NB_CodDistrito = codDistrito;
 
+    /*
+    Verificação que o distrito recebido anteriormente corresponde com o distrido rcebido por
+    parametro.
+    */
     IF upper(distritoverificar) LIKE upper(distrito)
     THEN
-        SELECT  vc_cidade
+        /*
+        Se ambos distritos coincidirem é realizado um select para obter a cidade
+        utilizando o codigo de distrito e de conselho obtidos anteriormente
+        e o codigo postal recebido por parametro.
+        */
+        SELECT /*+PARALLEL(ext_codPostal, DEFAULT)*/ vc_cidade
         INTO cidadeverificar
         FROM ext_codPostal
         WHERE nb_codpostal = codigopostal;
 
         cidaderecebida := UPPER(cidade)||CHR(13);
 
+            /*
+            Verificação que a cidade recebido anteriormente corresponde com a cidade rcebido por
+            parametro.
+            */
              IF cidaderecebida LIKE cidadeverificar
              THEN
                 INSERT INTO /*+ APPEND PARALLEL(ENDERECO, DEFAULT)*/ ENDERECO (VC_Rua, NB_CodPostal, NB_NumPorta, VC_Cidade, vc_concelho, vc_distrito, vc_pais)
@@ -983,37 +1072,58 @@ AS
     cartaoCliente NUMBER(4);
 BEGIN
     /*
-    Bloco de código que da os valores da operacao, escolhida aleatoriamente no codigo anterior,
-    para as variaveis operacao e operacaonome.
+    Bloco de código que insere na váriavel operacaonome o nome da operação recebida por parametro.
     */
-    SELECT vc_nome_operacao
+    SELECT /*+PARALLEL(operacao, DEFAULT)*/ vc_nome_operacao
     INTO operacaonome
     FROM operacao
     WHERE nb_operacao = operacao;
 
-IF plataforma = 'WEB'
+/*
+Verificação se a plataforma recebida por parámetro é 'WEB'.
+*/
+IF upper(plataforma) = 'WEB'
     THEN
+        /*
+        Verificação se operacão é diferente de transferência.
+        Caso seja verdade ira ser gerado um erro, uma vez que, apartir da 'WEB' somente se pode realizar operações de transferência.
+        */
         IF operacaoNome != 'TRANSFERENCIA'
         THEN
             insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar operações de Levantamento e de Depósito pela WEB.');
              RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar operações de Levantamento e de Depósito pela WEB.');
         END IF;
-
+        /*
+        Verificação se a conta recetora e a conta transação, ambas recebidas por parâmetro, são iguais.
+        Caso seja verdade ira ser gerado um erro, uma vez que, não se podere realizar transferências atravês da mesma conta.
+        */
         IF contarecetora = contatransacao
         THEN
-            insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar Transferência pela mesma conta.');
-            RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar Transferência pela mesma conta.');
+            insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar transferências pela mesma conta.');
+            RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar transferências pela mesma conta.');
         END IF;
 ELSE
+    /*
+    Caso a plataforma recebida por parámetro não seja ´WEB',
+    ira ser feita uma verificação para saber se a operação é uma transferência.
+    */
     IF operacaonome = 'TRANSFERENCIA'
     THEN
+            /*
+            Caso seja, será feita uma verificação para saber  se a conta recetora e a conta transação, ambas recebidas por parâmetro, são iguais.
+            Caso seja verdade ira ser gerado um erro, uma vez que, não se podere realizar transferências atravês da mesma conta.
+            */
             IF contarecetora = contatransacao
             THEN
-                insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar Transferência entre a mesma conta.');
-                RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar Transferência entre a mesma conta.');
+                insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar transferências entre a mesma conta.');
+                RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar transferências entre a mesma conta.');
             END IF;
 
     ELSE
+        /*
+        Caso não seja, será feita uma verificação para saber  se a conta recetora, recebida por parámetro possui o valor 'NULL' ou não.
+        Caso seja verdade ira ser gerado um erro, uma vez que, operações de depósito e levantamento não possuem conta recetora.
+        */
         IF contarecetora IS NOT NULL
         THEN
             insert_loglog('SP_TRANSACAO_INSERT','Uma transação de Levantamento/Deposito não possui uma conta recetora.');
@@ -1022,56 +1132,80 @@ ELSE
     END IF;
 END IF;
 
-    SELECT vc_tipo, nb_saldo
+    /*
+    Bloco de código que insere na váriavel contaSaldo o saldo da conta que realizara a transação
+    e insere na váriavel tipoConta o tipo de conta que realizara a transação.
+    */
+    SELECT /*+PARALLEL(conta, DEFAULT)*/ vc_tipo, nb_saldo
     INTO tipoConta, contaSaldo
     FROM conta
     WHERE nb_iban = contatransacao;
 
-    SELECT nb_iban, nb_ncliente
+    /*
+    Bloco de código que insere na váriavel cartaoiban o iban relacionado ao cortão recebido por parámetro
+    e insere na váriavel cartaoCliente o cliente relacionado ao cortão recebido por parámetro.
+    */
+    SELECT  /*+PARALLEL(cartao, DEFAULT)*/ nb_iban, nb_ncliente
     INTO cartaoiban, cartaoCliente
     FROM cartao
     WHERE nb_numeroCartao = cartao;
 
+    /*
+    Bloco de código que verifica se a conta recetora possui o valor 'NULL' ou não.
+    Caso possua ira inserir na variável contarecetorasaldo o saldo da conta recetora.
+    */
     IF contarecetora IS NOT NULL
     THEN
-        SELECT nb_saldo
+        SELECT /*+PARALLEL(conta, DEFAULT)*/ nb_saldo
         INTO contarecetorasaldo
         FROM conta
         WHERE nb_iban = contarecetora;
     END IF;
 
 
+/*
+Verificação que valida se o cartão pertence a conta que realizara a transação
+e se pertence ao cliente que está a realizar a transação.
+*/
 IF cartaoiban = contatransacao and cartaoCliente = clienteTransacao
 THEN
-    IF operacaonome IN('TRANSFERENCIA', 'DEPOSITO')
+    /*
+    Verificação feita para saber se a operação da transação é uma transferência ou um levantamento.
+    Caso seja será feita outra verificação para sabermos se a conta que realizara a transação possui saldo sufciente
+    */
+    IF operacaonome IN('TRANSFERENCIA', 'LEVANTAMENTO')
     THEN
         IF contaSaldo < valor
         then
-            insert_loglog('SP_TRANSACAO_INSERT','A conta não possui saldo sufciente para realizar um Deposito/Transferencia.');
-            RAISE_APPLICATION_ERROR(-20001, 'A conta não possui saldo sufciente para realizar um Deposito/Transferencia.');
+            insert_loglog('SP_TRANSACAO_INSERT','A conta não possui saldo sufciente para realizar um Levantamento/Transferencia.');
+            RAISE_APPLICATION_ERROR(-20001, 'A conta não possui saldo sufciente para realizar um Levantamento/Transferencia.');
         END IF;
     END IF;
+        /*
+        Verificação para saber se a conta que está a realizar uma transação é uma conta a 'ORDEM'.
+        Caso seja sera realizado o INSERT.
+        */
         IF tipoConta LIKE 'ORDEM'
         THEN
         INSERT INTO /*+ APPEND PARALLEL(TRANSACAO, DEFAULT)*/ TRANSACAO (VC_plataforma, nb_valor, dta_dtatransacao, nb_categoria, nb_operacao, nb_ncliente, nb_iban, nb_IBANRecetor, nb_Cartao)
         VALUES (plataforma, valor,TO_DATE(current_date,'dd/mm/yyyy'),categoria,operacao,clienteTransacao,contatransacao,contarecetora, cartao);
+
+            IF contarecetora IS NULL
+            THEN
+                IF operacaonome LIKE 'LEVANTAMENTO'
+                THEN
+                    update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo-valor) );
+                ELSE
+                    update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo+valor) );
+                END IF;
+            ELSE
+                    update_specifc_register('CONTA', contarecetora, 0, 'nb_saldo' , (contarecetorasaldo+valor) );
+                    update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo-valor) );
+            END IF;
         ELSE
             insert_loglog('SP_TRANSACAO_INSERT','Não se pode realizar Transferência com contas a prazo.');
             RAISE_APPLICATION_ERROR(-20001, 'Não se pode realizar Transferência com contas a prazo.');
         END IF;
-
-    IF contarecetora IS NULL
-    THEN
-        IF operacaonome LIKE 'LEVANTAMENTO'
-        THEN
-            update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo-valor) );
-        ELSE
-            update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo+valor) );
-        END IF;
-    ELSE
-            update_specifc_register('CONTA', contarecetora, 0, 'nb_saldo' , (contarecetorasaldo+valor) );
-            update_specifc_register('CONTA', contatransacao, 0, 'nb_saldo' , (contasaldo-valor) );
-    END IF;
 ELSE
     insert_loglog('SP_TRANSACAO_INSERT','O cartão tem de estar associado a conta que está a realizar a transação.');
     RAISE_APPLICATION_ERROR(-20001, 'O cartão tem de estar associado a conta que está a realizar a transação.');

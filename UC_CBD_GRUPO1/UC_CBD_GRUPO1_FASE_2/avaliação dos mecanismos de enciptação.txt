@@ -1,0 +1,37 @@
+    Transparent Data Encryption (TDE): O TDE é uma solução de criptografia em nível de coluna que criptografa automaticamente os dados armazenados em disco, garantindo que os arquivos de dados e backups sejam criptografados. Ele usa criptografia simétrica para proteger os dados e permite que a criptografia e descriptografia ocorram transparentemente no nível do banco de dados, sem a necessidade de alterar aplicativos ou consultas.
+
+    Oracle Advanced Security (ASO): O ASO é uma opção adicional que pode ser adquirida para aprimorar a segurança de dados em uma base de dados Oracle. Ele fornece recursos de criptografia em nível de rede para proteger as comunicações entre o banco de dados e os clientes, bem como a capacidade de criptografar colunas específicas em tabelas usando criptografia simétrica ou assimétrica.
+
+    Oracle Database Vault: Embora não seja um mecanismo de criptografia em si, o Oracle Database Vault é uma ferramenta de segurança avançada que pode ajudar a restringir o acesso a dados sensíveis. Ele permite criar políticas de acesso granulares para proteger dados confidenciais e pode ser usado em conjunto com os mecanismos de criptografia mencionados acima para reforçar a segurança global do banco de dados.
+
+    Opções de criptografia de aplicativos: Além dos mecanismos fornecidos pelo Oracle Database, você também pode implementar a criptografia de dados em nível de aplicativo, usando bibliotecas criptográficas padrão, como AES (Advanced Encryption Standard) ou RSA (Rivest-Shamir-Adleman). Nesse caso, você pode criptografar os dados antes de serem armazenados no banco de dados e realizar a descriptografia no aplicativo quando necessário.
+
+
+Aqui está uma avaliação geral dos mecanismos de criptografia mencionados, levando em consideração sua eficácia e funcionalidades:
+
+1. Transparent Data Encryption (TDE):
+   - Vantagens:
+     - Criptografa automaticamente os dados armazenados em disco, fornecendo uma camada adicional de segurança.
+     - A criptografia ocorre no nível do banco de dados, garantindo que os arquivos de dados e backups sejam protegidos.
+     - A criptografia e descriptografia ocorrem de forma transparente, sem a necessidade de alterações nos aplicativos ou consultas.
+   - Limitações:
+     - A criptografia é aplicada apenas nos arquivos de dados e backups, não protegendo os dados em trânsito ou em memória.
+     - O acesso aos dados criptografados é concedido a todos os usuários autorizados do banco de dados, uma vez que a criptografia é transparente no nível do banco de dados.
+
+2. Oracle Advanced Security (ASO):
+   - Vantagens:
+     - Além de criptografia em nível de disco, também oferece recursos de criptografia em nível de rede para proteger as comunicações entre o banco de dados e os clientes.
+     - Permite a criptografia de colunas específicas em tabelas, usando criptografia simétrica ou assimétrica, para um controle mais granular da segurança dos dados.
+   - Limitações:
+     - Requer uma licença adicional além da Oracle Database Enterprise Edition para aproveitar todos os recursos oferecidos.
+     - Pode exigir ajustes adicionais na configuração e na aplicação para habilitar e utilizar a criptografia em nível de rede.
+
+3. Oracle Database Vault:
+   - Vantagens:
+     - Fornece recursos avançados de segurança, além da criptografia, para restringir o acesso a dados sensíveis.
+     - Permite a criação de políticas de acesso granulares para proteger dados confidenciais contra acessos não autorizados.
+   - Limitações:
+     - Não é um mecanismo de criptografia em si, mas pode ser usado em conjunto com outros mecanismos para reforçar a segurança global do banco de dados.
+     - Requer uma licença adicional além da Oracle Database Enterprise Edition para utilização.
+
+No geral, os mecanismos de criptografia da Oracle, como TDE e ASO, fornecem recursos sólidos para proteger dados em repouso e em trânsito. Eles podem ser utilizados em combinação com o Oracle Database Vault para uma segurança ainda mais avançada. A escolha do mecanismo depende das necessidades específicas da sua organização, dos requisitos de segurança e da infraestrutura existente. Recomenda-se analisar cuidadosamente os recursos, as limitações e os requisitos de licenciamento de cada mecanismo antes de fazer a escolha adequada para o seu ambiente.

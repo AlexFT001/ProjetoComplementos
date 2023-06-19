@@ -1,28 +1,42 @@
--- Index para a chave primária da tabela Cliente
+-- Cliente
 CREATE INDEX idx_cliente_nb_ncliente ON cliente (nb_ncliente);
+CREATE INDEX idx_cliente_nb_nagencia ON cliente (nb_nagencia);
 
--- Index das chaves primárias da tabela moradacliente
+
+-- MoradaCliente
 CREATE INDEX idx_moradacliente_nb_ncliente ON moradacliente (nb_ncliente);
 CREATE INDEX idx_moradacliente_nb_nendereco ON moradacliente (nb_nendereco);
 
--- Index da chave primária da tabela endereco
+-- Endereco
 CREATE INDEX idx_endereco_nb_nendereco ON endereco (nb_nendereco);
+CREATE INDEX idx_endereco_vc_pais ON endereco (vc_pais);
 
--- Index das chaves primárias da tabela titular
+-- Titular
 CREATE INDEX idx_titular_nb_ncliente ON titular (nb_ncliente);
 CREATE INDEX idx_titular_nb_iban ON titular (nb_iban);
 
--- Index das chave primária da tabela conta
+-- Conta
 CREATE INDEX idx_conta_nb_iban ON conta (nb_iban);
+CREATE INDEX idx_conta_nb_nproduto ON conta (nb_nproduto);
+CREATE INDEX idx_conta_nb_nagencia ON conta (nb_nagencia);
 
--- Index da chave primária da tabela produto
+-- Produto
 CREATE INDEX idx_produto_nb_nproduto ON produto (nb_nproduto);
 
--- Index da chave primária da tabela agencia
+-- Agencia
 CREATE INDEX idx_agencia_nb_nagencia ON agencia (nb_nagencia);
 
--- Index da chave primária da tabela operacao
+-- Operacao
 CREATE INDEX idx_operacao_nb_operacao ON operacao (nb_operacao);
 
--- Index da chave primária da tabela categoria
+-- Categora
 CREATE INDEX idx_categoria_nb_categoria ON categoria (nb_categoria);
+
+-- Transacao
+CREATE INDEX idx_transacao_nb_iban ON transacao (nb_iban);
+CREATE INDEX idx_transacao_nb_ncliente ON transacao (nb_ncliente);
+CREATE INDEX idx_transacao_nb_ibanrecetor ON transacao (nb_ibanrecetor);
+CREATE INDEX idx_transacao_nb_operacao ON transacao (nb_operacao);
+CREATE INDEX idx_transacao_nb_valor ON transacao (nb_valor);
+
+
