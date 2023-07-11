@@ -27,7 +27,7 @@ BEGIN
 
    anoformatado := SUBSTR(TO_CHAR(ano), 3);
 
-insert into /*+ APPEND PARALLEL(historicotransacao, DEFAULT)*/ historicotransacao SELECT /* + parallel(t)*/t.*
+insert into /*+ APPEND PARALLEL(historicotransacao, DEFAULT)*/ historicotransacao SELECT /*+ parallel(t)*/t.*
 FROM transacao t
 WHERE EXTRACT(YEAR FROM DTA_DTATRANSACAO) = anoformatado;
 
@@ -35,7 +35,7 @@ WHERE EXTRACT(YEAR FROM DTA_DTATRANSACAO) = anoformatado;
 delete from transacao WHERE EXTRACT(YEAR FROM DTA_DTATRANSACAO) = anoformatado;
 END ;
 /
-
+--commit;
 /*
 este procedimento utiliza a tabela de metadados para eliminar dados dos registros da base de dados.
 recebe por parâmetro o nome da tabela, e o/s id/s da linha a eliminar.

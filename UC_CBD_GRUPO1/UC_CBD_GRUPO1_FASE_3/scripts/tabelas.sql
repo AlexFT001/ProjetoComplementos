@@ -230,7 +230,7 @@ CREATE TABLE titular (
 )
 TABLESPACE otm_gerais
 PCTFREE 0
-PCTUSED 0;
+PCTUSED 40;
 
 COMMENT on table titular is 'Esta tem como objetivo dar a possiblidadem de que cada cliente possa ter mais que uma conta.
                             Para além de identificar qual é a ordem de titularidade de uma conta especifica.';
